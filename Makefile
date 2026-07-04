@@ -1,5 +1,6 @@
 BINARY  := gjallar
-VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+# Version = first release heading in CHANGELOG.md, e.g. "## [0.1.0] - ..."
+VERSION ?= $(shell sed -n 's/^## \[\([^]]*\)\].*/\1/p' CHANGELOG.md | head -1)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
 .PHONY: all build test vet fmt run clean install
