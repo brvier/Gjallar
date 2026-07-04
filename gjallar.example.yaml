@@ -6,11 +6,16 @@ database: "gjallar.db"   # SQLite file
 retention: 720h          # prune check results older than this (30 days)
 site_title: "Gjallar Status"
 
+# Any value may reference an environment variable with ${VAR} syntax —
+# handy for secrets: pass: "${FREEMOBILE_KEY}". A bare $ is left alone.
+# Startup fails if a referenced variable is undefined.
+
 # Defaults applied to any monitor that omits the field.
 defaults:
   interval: 60s
   timeout: 10s
   failure_threshold: 3   # consecutive failures before a DOWN alert fires
+  realert: 1h            # remind while still down (omit or 0 = single DOWN alert)
   alerts: [ops-telegram]
 
 # Named notifiers, referenced by monitors via `alerts: [...]`.

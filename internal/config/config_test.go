@@ -99,6 +99,70 @@ func TestLoadValid(t *testing.T) {
 	}
 }
 
+func TestEnvExpansion(t *testing.T) {
+	t.Setenv("GJALLAR_TEST_TOKEN", "s3cret")
+	cfg, err := Load(writeConfig(t, `
+alerts:
+  tg:
+    url: "telegram://${GJALLAR_TEST_TOKEN}@telegram?chats=1"
+monitors:
+  - name: ora
+    type: oracle
+    dsn: "oracle://u:${GJALLAR_TEST_TOKEN}@h:1521/svc"
+    query: "SELECT status FROM v$instance"
+    rule: "~ ^OPEN$"
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Alerts["tg"].URL != "telegram://s3cret@telegram?chats=1" {
+		t.Errorf("alert url = %q", cfg.Alerts["tg"].URL)
+	}
+	if cfg.Monitors[0].DSN != "oracle://u:s3cret@h:1521/svc" {
+		t.Errorf("dsn = %q", cfg.Monitors[0].DSN)
+	}
+	// Bare $ in regex rules must survive untouched.
+	if cfg.Monitors[0].Rule != "~ ^OPEN$" {
+		t.Errorf("rule mangled: %q", cfg.Monitors[0].Rule)
+	}
+}
+
+func TestEnvExpansionUndefined(t *testing.T) {
+	_, err := Load(writeConfig(t, `
+monitors:
+  - name: x
+    type: ping
+    host: "${GJALLAR_TEST_NO_SUCH_VAR}"
+`))
+	if err == nil || !strings.Contains(err.Error(), "GJALLAR_TEST_NO_SUCH_VAR") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestRealertDefault(t *testing.T) {
+	cfg, err := Load(writeConfig(t, `
+defaults:
+  realert: 1h
+monitors:
+  - name: a
+    type: ping
+    host: h
+  - name: b
+    type: ping
+    host: h
+    realert: 30m
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Monitors[0].Realert.D() != time.Hour {
+		t.Errorf("inherited realert = %v", cfg.Monitors[0].Realert.D())
+	}
+	if cfg.Monitors[1].Realert.D() != 30*time.Minute {
+		t.Errorf("explicit realert = %v", cfg.Monitors[1].Realert.D())
+	}
+}
+
 func TestLoadErrors(t *testing.T) {
 	cases := []struct {
 		name, yaml, wantErr string

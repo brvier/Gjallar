@@ -124,6 +124,62 @@ func TestThresholdAndRecovery(t *testing.T) {
 	}
 }
 
+func TestRealert(t *testing.T) {
+	st, cfg, fake := testSetup(t)
+	cfg.Monitors[0].Realert = config.Duration(time.Hour)
+	e, _ := NewEngine(cfg, st, map[string]Notifier{"fake": fake})
+
+	at := func(offset time.Duration, ok bool) check.Result {
+		return check.Result{Monitor: "web", Time: time.Unix(1000, 0).Add(offset), OK: ok, Message: "boom"}
+	}
+
+	// Cross the threshold: one DOWN alert.
+	e.Process(at(0, false))
+	e.Process(at(time.Minute, false))
+	e.Process(at(2*time.Minute, false))
+	fake.waitSent(t, 1)
+
+	// Still failing within the realert window: silent.
+	e.Process(at(30*time.Minute, false))
+	if fake.count() != 1 {
+		t.Fatalf("premature realert: %v", fake.sent)
+	}
+
+	// Past the window: STILL DOWN reminder.
+	e.Process(at(62*time.Minute+2*time.Minute, false))
+	sent := fake.waitSent(t, 2)
+	if !strings.Contains(sent[1], "STILL DOWN: web") || !strings.Contains(sent[1], "still down after") {
+		t.Errorf("realert = %q", sent[1])
+	}
+
+	// The reminder resets the window.
+	e.Process(at(90*time.Minute, false))
+	if fake.count() != 2 {
+		t.Fatalf("window not reset: %v", fake.sent)
+	}
+
+	// And recovery still fires normally.
+	e.Process(at(3*time.Hour, true))
+	sent = fake.waitSent(t, 3)
+	if !strings.Contains(sent[2], "UP: web") {
+		t.Errorf("recovery = %q", sent[2])
+	}
+}
+
+func TestNoRealertWhenDisabled(t *testing.T) {
+	st, cfg, fake := testSetup(t) // Realert unset = 0 = disabled
+	e, _ := NewEngine(cfg, st, map[string]Notifier{"fake": fake})
+	base := time.Unix(1000, 0)
+	for i := 0; i < 3; i++ {
+		e.Process(check.Result{Monitor: "web", Time: base, OK: false, Message: "boom"})
+	}
+	fake.waitSent(t, 1)
+	e.Process(check.Result{Monitor: "web", Time: base.Add(100 * time.Hour), OK: false, Message: "boom"})
+	if fake.count() != 1 {
+		t.Fatalf("unexpected realert: %v", fake.sent)
+	}
+}
+
 func TestFlappingBelowThreshold(t *testing.T) {
 	st, cfg, fake := testSetup(t)
 	e, _ := NewEngine(cfg, st, map[string]Notifier{"fake": fake})

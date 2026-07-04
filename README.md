@@ -41,6 +41,29 @@ Then open <http://localhost:8080>. The page auto-refreshes every 10 s.
 Configuration reference: see [`gjallar.example.yaml`](gjallar.example.yaml) —
 every field is documented there.
 
+### Secrets
+
+Any config value may reference an environment variable with `${VAR}` syntax:
+
+```yaml
+dsn: "postgres://monitor:${PG_PASSWORD}@db1:5432/app"
+```
+
+Startup fails with a clear error if a referenced variable is undefined. A bare
+`$` (e.g. in a `~ ^OPEN$` regex rule) is left untouched.
+
+### Reload
+
+Gjallar reloads its configuration on `SIGHUP` (`systemctl reload gjallar`).
+The new config is fully validated first — if it is broken, the running
+configuration is kept and the error is logged.
+
+### Re-alerts
+
+By default a monitor alerts once when it goes down and once when it recovers.
+Set `realert: 1h` (globally in `defaults` or per monitor) to also get a
+"still down" reminder at that interval during long outages.
+
 ## Ping permissions
 
 Unprivileged ping (`privileged: false`, the default) needs:

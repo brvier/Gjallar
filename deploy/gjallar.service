@@ -9,6 +9,7 @@ User=gjallar
 Group=gjallar
 WorkingDirectory=/var/lib/gjallar
 ExecStart=/usr/local/bin/gjallar -config /etc/gjallar/gjallar.yaml
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=5
 

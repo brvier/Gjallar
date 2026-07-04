@@ -20,11 +20,13 @@ type Notifier interface {
 const sendTimeout = 15 * time.Second
 
 type monitorState struct {
-	down        bool
-	consecFails int
-	downSince   time.Time
-	threshold   int
-	notifiers   []string
+	down         bool
+	consecFails  int
+	downSince    time.Time
+	lastNotified time.Time
+	threshold    int
+	realert      time.Duration // reminder interval while down; 0 = disabled
+	notifiers    []string
 }
 
 // Engine is a per-monitor up/down state machine. Process must be called from
@@ -41,7 +43,7 @@ type Engine struct {
 func NewEngine(cfg *config.Config, st *store.Store, notifiers map[string]Notifier) (*Engine, error) {
 	e := &Engine{st: st, notifiers: notifiers, states: map[string]*monitorState{}}
 	for _, m := range cfg.Monitors {
-		s := &monitorState{threshold: m.FailureThreshold, notifiers: m.Alerts}
+		s := &monitorState{threshold: m.FailureThreshold, realert: m.Realert.D(), notifiers: m.Alerts}
 		open, err := st.HasOpenIncident(m.Name)
 		if err != nil {
 			return nil, err
@@ -50,6 +52,7 @@ func NewEngine(cfg *config.Config, st *store.Store, notifiers map[string]Notifie
 			s.down = true
 			s.consecFails = m.FailureThreshold
 			s.downSince = time.Now()
+			s.lastNotified = time.Now()
 		}
 		e.states[m.Name] = s
 	}
@@ -78,14 +81,21 @@ func (e *Engine) Process(r check.Result) {
 		if s.consecFails >= s.threshold {
 			s.down = true
 			s.downSince = r.Time
+			s.lastNotified = r.Time
 			if err := e.st.OpenIncident(r.Monitor, r.Message, r.Time); err != nil {
 				slog.Error("opening incident", "monitor", r.Monitor, "error", err)
 			}
 			e.notify(s, fmt.Sprintf("[Gjallar] DOWN: %s", r.Monitor),
 				fmt.Sprintf("%s — %s (%d consecutive failures)", r.Monitor, r.Message, s.consecFails))
 		}
+	default: // already down and still failing: remind every realert interval
+		if s.realert > 0 && r.Time.Sub(s.lastNotified) >= s.realert {
+			s.lastNotified = r.Time
+			e.notify(s, fmt.Sprintf("[Gjallar] STILL DOWN: %s", r.Monitor),
+				fmt.Sprintf("%s still down after %s — %s", r.Monitor,
+					r.Time.Sub(s.downSince).Round(time.Second), r.Message))
+		}
 	}
-	// already down and still failing: no repeat alerts
 }
 
 func (e *Engine) notify(s *monitorState, title, message string) {

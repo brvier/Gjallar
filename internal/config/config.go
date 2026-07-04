@@ -2,6 +2,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"regexp"
@@ -40,6 +41,7 @@ type Defaults struct {
 	Interval         Duration `yaml:"interval"`
 	Timeout          Duration `yaml:"timeout"`
 	FailureThreshold int      `yaml:"failure_threshold"`
+	Realert          Duration `yaml:"realert"` // 0 = no reminder while down
 	Alerts           []string `yaml:"alerts"`
 }
 
@@ -58,6 +60,7 @@ type Monitor struct {
 	Interval         Duration `yaml:"interval"`
 	Timeout          Duration `yaml:"timeout"`
 	FailureThreshold int      `yaml:"failure_threshold"`
+	Realert          Duration `yaml:"realert"` // reminder interval while down; 0 = inherit / disabled
 	Alerts           []string `yaml:"alerts"`
 
 	// http
@@ -87,16 +90,41 @@ var monitorTypes = map[string]bool{
 	"http": true, "postgres": true, "oracle": true, "ping": true, "prometheus": true,
 }
 
-// Load reads, decodes (strict), applies defaults and validates the config.
+// envRe matches ${VAR} only; a bare $ is left alone so regex rules like
+// "~ ^OPEN$" survive expansion.
+var envRe = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
+
+func expandEnv(data []byte) ([]byte, error) {
+	var missing []string
+	out := envRe.ReplaceAllFunc(data, func(m []byte) []byte {
+		name := string(m[2 : len(m)-1])
+		v, ok := os.LookupEnv(name)
+		if !ok {
+			missing = append(missing, name)
+			return m
+		}
+		return []byte(v)
+	})
+	if len(missing) > 0 {
+		return nil, fmt.Errorf("undefined environment variables: %s", strings.Join(missing, ", "))
+	}
+	return out, nil
+}
+
+// Load reads, expands ${ENV_VAR} references, decodes (strict), applies
+// defaults and validates the config.
 func Load(path string) (*Config, error) {
-	f, err := os.Open(path)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	expanded, err := expandEnv(raw)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
 
 	cfg := &Config{}
-	dec := yaml.NewDecoder(f)
+	dec := yaml.NewDecoder(bytes.NewReader(expanded))
 	dec.KnownFields(true)
 	if err := dec.Decode(cfg); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
@@ -140,6 +168,9 @@ func (c *Config) applyDefaults() {
 		}
 		if m.FailureThreshold == 0 {
 			m.FailureThreshold = c.Defaults.FailureThreshold
+		}
+		if m.Realert == 0 {
+			m.Realert = c.Defaults.Realert
 		}
 		if m.Alerts == nil {
 			m.Alerts = c.Defaults.Alerts

@@ -3,6 +3,23 @@
 All notable changes to Gjallar are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.0] - 2026-07-04
+
+### Added
+
+- `${VAR}` environment variable expansion in the config file, for secrets.
+  Startup fails if a referenced variable is undefined.
+- `realert` option (defaults or per monitor): "still down" reminder alerts at
+  the given interval during long outages.
+- Configuration reload on SIGHUP (`systemctl reload gjallar`). A broken new
+  config is rejected and the running configuration is kept.
+- GitHub Actions CI (vet, test, build).
+
+### Changed
+
+- The embedded logo is now 128 px (~14 KB instead of ~1 MB), shrinking the
+  binary and the page weight.
+
 ## [0.1.0] - 2026-07-04
 
 ### Added
