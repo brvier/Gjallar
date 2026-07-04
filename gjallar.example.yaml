@@ -1,0 +1,88 @@
+# Gjallar example configuration.
+# Copy to gjallar.yaml, adapt, then run: ./gjallar -config gjallar.yaml
+
+listen: ":8080"          # web UI bind address
+database: "gjallar.db"   # SQLite file
+retention: 720h          # prune check results older than this (30 days)
+site_title: "Gjallar Status"
+
+# Defaults applied to any monitor that omits the field.
+defaults:
+  interval: 60s
+  timeout: 10s
+  failure_threshold: 3   # consecutive failures before a DOWN alert fires
+  alerts: [ops-telegram]
+
+# Named notifiers, referenced by monitors via `alerts: [...]`.
+# Default type is a shoutrrr URL — supports telegram, smtp, discord, slack,
+# ntfy, gotify, pushover, generic webhooks and more.
+# See https://shoutrrr.nickfedor.com/services/overview/
+alerts:
+  ops-telegram:
+    url: "telegram://TOKEN@telegram?chats=123456789"
+  ops-mail:
+    url: "smtp://user:password@mail.example.com:587/?from=gjallar@example.com&to=ops@example.com"
+  ntfy:
+    url: "ntfy://ntfy.sh/my-gjallar-topic"
+  sms-boss:                # French Free Mobile SMS API
+    type: freemobile
+    user: "12345678"       # your Free Mobile login
+    pass: "AbCdEfGh1234"   # the API key from your subscriber area
+
+monitors:
+  # --- HTTP/HTTPS: status code, body regex, TLS certificate expiry ---
+  - name: website
+    type: http
+    url: "https://example.com/api/health"
+    method: GET                       # default GET
+    headers:
+      Authorization: "Bearer xyz"
+    expect_status: 200                # assert exact status code (omit = any 2xx)
+    body_regex: '"status"\s*:\s*"ok"' # response body must match
+    cert_expiry_warn: 336h            # fail if TLS cert expires within 14 days (omit = disabled)
+    interval: 30s
+    timeout: 5s
+    alerts: [ops-telegram, sms-boss]
+
+  # --- PostgreSQL: rule applied to first column of first row ---
+  - name: main-db
+    type: postgres
+    dsn: "postgres://monitor:secret@db1:5432/app?sslmode=disable"
+    query: "SELECT count(*) FROM jobs WHERE status = 'stuck'"
+    rule: "== 0"
+    # rules: "> N", ">= N", "< N", "<= N", "== x", "!= x", "~ regex", "rows > 0"
+
+  # --- Oracle (pure Go driver, no client install needed) ---
+  - name: erp-oracle
+    type: oracle
+    dsn: "oracle://monitor:secret@erp-host:1521/ORCLPDB1"
+    query: "SELECT status FROM v$instance"
+    rule: "~ OPEN"
+
+  # --- Rule on row count instead of first value ---
+  - name: heartbeats
+    type: postgres
+    dsn: "postgres://monitor:secret@db1:5432/app"
+    query: "SELECT id FROM heartbeats WHERE ts > now() - interval '5 minutes'"
+    rule: "rows > 0"
+
+  # --- ICMP ping ---
+  - name: gateway
+    type: ping
+    host: "192.168.1.1"
+    count: 3            # packets per check; fails if all are lost
+    privileged: false   # false = unprivileged ICMP; may need:
+                        #   sudo sysctl -w net.ipv4.ping_group_range="0 2147483647"
+                        # true = raw sockets; needs root or:
+                        #   sudo setcap cap_net_raw+ep ./gjallar
+    interval: 15s
+    timeout: 5s
+
+  # --- Prometheus metrics: rule must hold for every matching series ---
+  - name: node1-disk
+    type: prometheus
+    url: "http://node1:9100/metrics"
+    metric: "node_filesystem_avail_bytes"
+    labels: { mountpoint: "/" }   # optional exact-match label selectors
+    rule: "> 5e9"
+    alerts: [ops-mail]

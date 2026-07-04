@@ -1,0 +1,54 @@
+{{define "detail_fragment"}}
+<div class="detail-head">
+  <h2>{{.Name}} <span class="mon-type">{{.Type}}</span></h2>
+  <span class="pill {{.Status}}">{{.Status}}</span>
+</div>
+
+<div class="stats">
+  <div class="stat"><strong>{{.Uptime24h}}</strong><small>uptime 24h</small></div>
+  <div class="stat"><strong>{{.Uptime30d}}</strong><small>uptime 30d</small></div>
+</div>
+
+{{if .Sparkline}}
+<section class="spark">
+  <h3>Latency</h3>
+  {{.Sparkline}}
+</section>
+{{end}}
+
+{{if .Incidents}}
+<section class="incidents">
+  <h3>Incidents</h3>
+  <table>
+    <thead><tr><th>Started</th><th>Duration</th><th>Reason</th><th></th></tr></thead>
+    <tbody>
+    {{range .Incidents}}
+      <tr class="{{if .Open}}open{{end}}">
+        <td>{{.Started}}</td>
+        <td>{{.Duration}}</td>
+        <td class="reason">{{.Reason}}</td>
+        <td>{{if .Open}}<span class="pill down">ongoing</span>{{else}}<span class="pill up">resolved</span>{{end}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+{{end}}
+
+<section class="history">
+  <h3>Recent checks</h3>
+  <table>
+    <thead><tr><th>Time</th><th>Status</th><th>Latency</th><th>Message</th></tr></thead>
+    <tbody>
+    {{range .Rows}}
+      <tr>
+        <td>{{.Time.Format "2006-01-02 15:04:05"}}</td>
+        <td>{{if .OK}}<span class="pill up">ok</span>{{else}}<span class="pill down">fail</span>{{end}}</td>
+        <td>{{fmtLatency .Latency}}</td>
+        <td class="reason">{{.Message}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+{{end}}

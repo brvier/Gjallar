@@ -1,0 +1,5 @@
+{{define "content"}}
+<div id="monitors" hx-get="/fragments/monitors" hx-trigger="every 10s" hx-swap="innerHTML">
+{{template "monitors_fragment" .}}
+</div>
+{{end}}

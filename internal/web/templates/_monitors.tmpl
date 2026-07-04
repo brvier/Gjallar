@@ -1,0 +1,40 @@
+{{define "monitors_fragment"}}
+<section class="cards">
+{{range .Monitors}}
+  <article class="card">
+    <div class="card-head">
+      <a class="mon-name" href="/monitor/{{.Name}}">{{.Name}}</a>
+      <span class="mon-type">{{.Type}}</span>
+      <span class="pill {{.Status}}">{{.Status}}</span>
+    </div>
+    <div class="ticks">
+      {{range .Ticks}}<span class="tick {{if .Known}}{{if .OK}}ok{{else}}fail{{end}}{{else}}empty{{end}}"{{if .Title}} title="{{.Title}}"{{end}}></span>{{end}}
+    </div>
+    <div class="card-foot">
+      <span>{{.Latency}}</span>
+      <span>{{.Uptime24h}} <small>24h</small></span>
+    </div>
+  </article>
+{{end}}
+</section>
+
+{{if .Incidents}}
+<section class="incidents">
+  <h2>Incidents</h2>
+  <table>
+    <thead><tr><th>Monitor</th><th>Started</th><th>Duration</th><th>Reason</th><th></th></tr></thead>
+    <tbody>
+    {{range .Incidents}}
+      <tr class="{{if .Open}}open{{end}}">
+        <td><a href="/monitor/{{.Monitor}}">{{.Monitor}}</a></td>
+        <td>{{.Started}}</td>
+        <td>{{.Duration}}</td>
+        <td class="reason">{{.Reason}}</td>
+        <td>{{if .Open}}<span class="pill down">ongoing</span>{{else}}<span class="pill up">resolved</span>{{end}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+{{end}}
+{{end}}

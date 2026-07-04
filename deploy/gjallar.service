@@ -1,0 +1,28 @@
+[Unit]
+Description=Gjallar monitoring service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gjallar
+Group=gjallar
+WorkingDirectory=/var/lib/gjallar
+ExecStart=/usr/local/bin/gjallar -config /etc/gjallar/gjallar.yaml
+Restart=on-failure
+RestartSec=5
+
+# Needed for ping monitors with privileged: true (raw ICMP sockets).
+# For privileged: false, instead make sure the sysctl allows it:
+#   net.ipv4.ping_group_range = 0 2147483647
+AmbientCapabilities=CAP_NET_RAW
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/gjallar
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,21 @@
+{{define "layout"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}}</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="/static/logo.png">
+<script src="/static/htmx.min.js"></script>
+</head>
+<body>
+<header>
+  <a href="/" class="brand"><img src="/static/logo.png" alt="logo" class="logo"><span>{{.Title}}</span></a>
+</header>
+<main>
+{{template "content" .}}
+</main>
+<footer>powered by <a href="https://github.com/brvier/gjallar">Gjallar</a></footer>
+</body>
+</html>
+{{end}}

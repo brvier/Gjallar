@@ -1,0 +1,5 @@
+/gjallar
+*.db
+*.db-wal
+*.db-shm
+gjallar.yaml

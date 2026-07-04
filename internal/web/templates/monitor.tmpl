@@ -1,0 +1,6 @@
+{{define "content"}}
+<p><a href="/" class="back">&larr; all monitors</a></p>
+<div id="detail" hx-get="/fragments/monitor/{{.Name}}" hx-trigger="every 10s" hx-swap="innerHTML">
+{{template "detail_fragment" .}}
+</div>
+{{end}}
