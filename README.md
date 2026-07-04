@@ -58,6 +58,12 @@ Gjallar reloads its configuration on `SIGHUP` (`systemctl reload gjallar`).
 The new config is fully validated first — if it is broken, the running
 configuration is kept and the error is logged.
 
+### Groups
+
+Give monitors an optional `group: "Hyperion"` and the status page shows them
+under a common header with an `up/total` count. Monitors without a group are
+listed first, without a header. Groups appear in config order.
+
 ### Re-alerts
 
 By default a monitor alerts once when it goes down and once when it recovers.

@@ -1,4 +1,11 @@
 {{define "monitors_fragment"}}
+{{range .Groups}}
+{{if .Name}}
+<div class="group-head">
+  <h2>{{.Name}}</h2>
+  <span class="group-count{{if lt .Up .Total}} bad{{end}}">{{.Up}}/{{.Total}} up</span>
+</div>
+{{end}}
 <section class="cards">
 {{range .Monitors}}
   <article class="card">
@@ -17,6 +24,7 @@
   </article>
 {{end}}
 </section>
+{{end}}
 
 {{if .Incidents}}
 <section class="incidents">

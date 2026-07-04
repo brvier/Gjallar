@@ -43,8 +43,17 @@ a:hover { text-decoration: underline; }
 h2, h3 { color: var(--text); margin: 24px 0 8px; }
 h2 { border-left: 4px solid var(--red); padding-left: 10px; }
 
+/* monitor groups */
+.group-head {
+  display: flex; align-items: baseline; gap: 12px;
+  margin-top: 28px;
+}
+.group-head h2 { margin: 0 0 8px; }
+.group-count { color: var(--muted); font-size: 12px; }
+.group-count.bad { color: var(--red); font-weight: 700; }
+
 /* monitor cards */
-.cards { display: flex; flex-direction: column; gap: 12px; }
+.cards { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
 .card {
   background: var(--card);
   border: 1px solid var(--border);

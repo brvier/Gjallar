@@ -89,9 +89,16 @@ type IncidentView struct {
 	Open     bool
 }
 
+type GroupView struct {
+	Name     string // empty = ungrouped
+	Up       int
+	Total    int
+	Monitors []MonitorView
+}
+
 type overviewData struct {
 	Title     string
-	Monitors  []MonitorView
+	Groups    []GroupView
 	Incidents []IncidentView
 }
 
@@ -146,8 +153,21 @@ func (s *Server) render(w http.ResponseWriter, t *template.Template, name string
 
 func (s *Server) overview() overviewData {
 	d := overviewData{Title: s.cfg.SiteTitle}
+	idx := map[string]int{} // group name -> position, in order of first appearance
 	for _, m := range s.cfg.Monitors {
-		d.Monitors = append(d.Monitors, s.monitorView(m))
+		v := s.monitorView(m)
+		gi, ok := idx[m.Group]
+		if !ok {
+			gi = len(d.Groups)
+			idx[m.Group] = gi
+			d.Groups = append(d.Groups, GroupView{Name: m.Group})
+		}
+		g := &d.Groups[gi]
+		g.Monitors = append(g.Monitors, v)
+		g.Total++
+		if v.Status == "up" {
+			g.Up++
+		}
 	}
 	incs, err := s.st.Incidents(incidentCount)
 	if err != nil {

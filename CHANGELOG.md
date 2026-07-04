@@ -3,6 +3,13 @@
 All notable changes to Gjallar are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] - 2026-07-04
+
+### Added
+
+- Monitor groups: an optional `group` field on monitors; the status page
+  shows grouped monitors under a header with an up/total count.
+
 ## [0.2.0] - 2026-07-04
 
 ### Added

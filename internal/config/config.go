@@ -56,7 +56,8 @@ type Alert struct {
 
 type Monitor struct {
 	Name             string   `yaml:"name"`
-	Type             string   `yaml:"type"` // http | postgres | oracle | ping | prometheus
+	Group            string   `yaml:"group"` // optional; groups monitors on the status page
+	Type             string   `yaml:"type"`  // http | postgres | oracle | ping | prometheus
 	Interval         Duration `yaml:"interval"`
 	Timeout          Duration `yaml:"timeout"`
 	FailureThreshold int      `yaml:"failure_threshold"`
