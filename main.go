@@ -21,10 +21,19 @@ import (
 	"gjallar/internal/web"
 )
 
+// version is injected at build time via -ldflags "-X main.version=..."
+var version = "dev"
+
 func main() {
 	configPath := flag.String("config", "gjallar.yaml", "path to YAML configuration")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
+	if *showVersion {
+		fmt.Println("gjallar", version)
+		return
+	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
+	slog.Info("starting gjallar", "version", version)
 
 	if err := run(*configPath); err != nil {
 		fmt.Fprintln(os.Stderr, "gjallar:", err)
