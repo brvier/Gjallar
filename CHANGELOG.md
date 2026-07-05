@@ -3,6 +3,13 @@
 All notable changes to Gjallar are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0] - 2026-07-05
+
+### Added
+
+- Redis check type (`type: redis`): TCP connect, optional `AUTH`, `PING`
+  must answer `+PONG`. Fields: `host`, `port` (default 6379), `password`.
+
 ## [0.4.0] - 2026-07-05
 
 ### Added

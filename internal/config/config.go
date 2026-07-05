@@ -81,10 +81,12 @@ type Monitor struct {
 	Query string `yaml:"query"`
 	Rule  string `yaml:"rule"` // also used by prometheus
 
-	// ping
+	// ping / redis
 	Host       string `yaml:"host"`
 	Count      int    `yaml:"count"`
 	Privileged bool   `yaml:"privileged"`
+	Port       int    `yaml:"port"`     // redis; default 6379
+	Password   string `yaml:"password"` // redis; empty = no AUTH
 
 	// prometheus
 	Metric string            `yaml:"metric"`
@@ -92,7 +94,7 @@ type Monitor struct {
 }
 
 var monitorTypes = map[string]bool{
-	"http": true, "postgres": true, "oracle": true, "ping": true, "prometheus": true,
+	"http": true, "postgres": true, "oracle": true, "ping": true, "prometheus": true, "redis": true,
 }
 
 // envRe matches ${VAR} only; a bare $ is left alone so regex rules like
@@ -236,7 +238,7 @@ func (c *Config) Validate() error {
 
 func (m *Monitor) validate() error {
 	if !monitorTypes[m.Type] {
-		return fmt.Errorf("unknown type %q (supported: http, postgres, oracle, ping, prometheus)", m.Type)
+		return fmt.Errorf("unknown type %q (supported: http, postgres, oracle, ping, prometheus, redis)", m.Type)
 	}
 	switch m.Type {
 	case "http":
@@ -258,7 +260,7 @@ func (m *Monitor) validate() error {
 		if m.Rule == "" {
 			return fmt.Errorf("rule is required")
 		}
-	case "ping":
+	case "ping", "redis":
 		if m.Host == "" {
 			return fmt.Errorf("host is required")
 		}

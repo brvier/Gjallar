@@ -89,6 +89,13 @@ monitors:
     interval: 15s
     timeout: 5s
 
+  # --- Redis: connect + optional AUTH + PING ---
+  - name: cache
+    type: redis
+    host: "10.0.0.5"
+    port: 6379            # default 6379
+    password: "${REDIS_PASSWORD}"   # omit if no AUTH
+
   # --- Prometheus metrics: rule must hold for every matching series ---
   - name: node1-disk
     type: prometheus

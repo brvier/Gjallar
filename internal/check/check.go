@@ -39,6 +39,8 @@ func New(m config.Monitor) (Checker, error) {
 		c, err = newSQLCheck("oracle", m)
 	case "ping":
 		c, err = newPingCheck(m)
+	case "redis":
+		c, err = newRedisCheck(m)
 	case "prometheus":
 		c, err = newPromCheck(m)
 	default:
