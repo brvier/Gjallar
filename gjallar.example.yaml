@@ -33,6 +33,11 @@ alerts:
     type: freemobile
     user: "12345678"       # your Free Mobile login
     pass: "AbCdEfGh1234"   # the API key from your subscriber area
+  signal-ops:              # signal-cli-rest-api gateway (POST /v2/send)
+    type: signal
+    url: "https://signal-api.example.com/v2/send"
+    number: "+33600000000"              # sender registered on the gateway
+    recipients: ["+33611111111", "+33622222222"]
 
 monitors:
   # --- HTTP/HTTPS: status code, body regex, TLS certificate expiry ---

@@ -46,12 +46,16 @@ type Defaults struct {
 }
 
 // Alert is a named notifier. Type "" (default) means a shoutrrr URL;
-// type "freemobile" uses the Free Mobile SMS API with User/Pass.
+// type "freemobile" uses the Free Mobile SMS API with User/Pass;
+// type "signal" posts to a signal-cli-rest-api /v2/send endpoint.
 type Alert struct {
 	Type string `yaml:"type"`
 	URL  string `yaml:"url"`
 	User string `yaml:"user"`
 	Pass string `yaml:"pass"`
+	// signal
+	Number     string   `yaml:"number"`     // sender number registered on the gateway
+	Recipients []string `yaml:"recipients"` // destination numbers
 }
 
 type Monitor struct {
@@ -196,8 +200,12 @@ func (c *Config) Validate() error {
 			if a.User == "" || a.Pass == "" {
 				return fmt.Errorf("alert %q: user and pass are required for type freemobile", name)
 			}
+		case "signal":
+			if a.URL == "" || a.Number == "" || len(a.Recipients) == 0 {
+				return fmt.Errorf("alert %q: url, number and recipients are required for type signal", name)
+			}
 		default:
-			return fmt.Errorf("alert %q: unknown type %q (supported: shoutrrr, freemobile)", name, a.Type)
+			return fmt.Errorf("alert %q: unknown type %q (supported: shoutrrr, freemobile, signal)", name, a.Type)
 		}
 	}
 	if len(c.Monitors) == 0 {

@@ -20,6 +20,8 @@ func BuildNotifiers(alerts map[string]config.Alert) (map[string]Notifier, error)
 			out[name] = n
 		case "freemobile":
 			out[name] = NewFreeMobile(a.User, a.Pass)
+		case "signal":
+			out[name] = NewSignal(a.URL, a.Number, a.Recipients)
 		default:
 			return nil, fmt.Errorf("alert %q: unknown type %q", name, a.Type)
 		}

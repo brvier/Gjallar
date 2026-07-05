@@ -178,6 +178,7 @@ func TestLoadErrors(t *testing.T) {
 		{"unknown alert ref", "monitors:\n  - name: x\n    type: ping\n    host: h\n    alerts: [nope]", `unknown alert "nope"`},
 		{"alert missing url", "alerts:\n  a: {}\nmonitors:\n  - name: x\n    type: ping\n    host: h", "url is required"},
 		{"freemobile missing pass", "alerts:\n  a:\n    type: freemobile\n    user: u\nmonitors:\n  - name: x\n    type: ping\n    host: h", "user and pass"},
+		{"signal missing recipients", "alerts:\n  a:\n    type: signal\n    url: http://h/v2/send\n    number: \"+336\"\nmonitors:\n  - name: x\n    type: ping\n    host: h", "url, number and recipients"},
 		{"bad duration", "monitors:\n  - name: x\n    type: ping\n    host: h\n    interval: fast", "invalid duration"},
 	}
 	for _, tc := range cases {

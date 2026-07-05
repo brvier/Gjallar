@@ -24,6 +24,8 @@ Rules: `> N`, `>= N`, `< N`, `<= N`, `== x`, `!= x`, `~ regex`, `rows > 0` (row 
 - Any [shoutrrr](https://shoutrrr.nickfedor.com/) URL: Telegram, email/SMTP, ntfy,
   Discord, Slack, Gotify, Pushover, generic webhooks, ...
 - Free Mobile SMS API (`type: freemobile`).
+- Signal via a [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api)
+  gateway (`type: signal`: `url` to `/v2/send`, sender `number`, `recipients`).
 
 A monitor alerts after `failure_threshold` consecutive failures (no flapping noise),
 and again on recovery. Open incidents survive restarts: no duplicate alerts.
