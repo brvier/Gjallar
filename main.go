@@ -28,9 +28,22 @@ var version = "dev"
 func main() {
 	configPath := flag.String("config", "gjallar.yaml", "path to YAML configuration")
 	showVersion := flag.Bool("version", false, "print version and exit")
+	checkOnly := flag.Bool("check", false, "validate the configuration (including checkers and alert URLs) and exit")
 	flag.Parse()
 	if *showVersion {
 		fmt.Println("gjallar", version)
+		return
+	}
+	if *checkOnly {
+		cfg, err := config.Load(*configPath)
+		if err == nil {
+			_, err = prepare(cfg)
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "gjallar:", err)
+			os.Exit(1)
+		}
+		fmt.Printf("config OK: %d monitors, %d alert channels\n", len(cfg.Monitors), len(cfg.Alerts))
 		return
 	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))

@@ -3,6 +3,13 @@
 All notable changes to Gjallar are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.0] - 2026-07-06
+
+### Added
+
+- `-check` flag: validate the configuration (monitors, rules, alert URLs)
+  and exit without running any check or sending any alert.
+
 ## [0.5.0] - 2026-07-05
 
 ### Added
