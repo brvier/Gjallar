@@ -16,6 +16,7 @@ HTMX-refreshed), and alerts you when something goes down — and when it recover
 | `oracle` | SQL query result against a rule (pure-Go go-ora driver, no Oracle client needed) |
 | `ping` | ICMP echo (privileged or unprivileged) |
 | `redis` | TCP connect + optional `AUTH` + `PING`/`+PONG` |
+| `elasticsearch` | freshness: hours since `max(timestamp_field)` in an index, checked against a rule |
 | `prometheus` | Fetches a `/metrics` route and evaluates a rule against metric values, with optional label selectors |
 
 Rules: `> N`, `>= N`, `< N`, `<= N`, `== x`, `!= x`, `~ regex`, `rows > 0` (row count).

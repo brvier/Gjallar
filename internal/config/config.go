@@ -91,10 +91,15 @@ type Monitor struct {
 	// prometheus
 	Metric string            `yaml:"metric"`
 	Labels map[string]string `yaml:"labels"`
+
+	// elasticsearch
+	Index          string `yaml:"index"`
+	TimestampField string `yaml:"timestamp_field"` // freshness = hours since max(this field)
 }
 
 var monitorTypes = map[string]bool{
 	"http": true, "postgres": true, "oracle": true, "ping": true, "prometheus": true, "redis": true,
+	"elasticsearch": true,
 }
 
 // envRe matches ${VAR} only; a bare $ is left alone so regex rules like
@@ -238,7 +243,7 @@ func (c *Config) Validate() error {
 
 func (m *Monitor) validate() error {
 	if !monitorTypes[m.Type] {
-		return fmt.Errorf("unknown type %q (supported: http, postgres, oracle, ping, prometheus, redis)", m.Type)
+		return fmt.Errorf("unknown type %q (supported: http, postgres, oracle, ping, prometheus, redis, elasticsearch)", m.Type)
 	}
 	switch m.Type {
 	case "http":
@@ -270,6 +275,19 @@ func (m *Monitor) validate() error {
 		}
 		if m.Metric == "" {
 			return fmt.Errorf("metric is required")
+		}
+		if m.Rule == "" {
+			return fmt.Errorf("rule is required")
+		}
+	case "elasticsearch":
+		if m.URL == "" {
+			return fmt.Errorf("url is required")
+		}
+		if m.Index == "" {
+			return fmt.Errorf("index is required")
+		}
+		if m.TimestampField == "" {
+			return fmt.Errorf("timestamp_field is required")
 		}
 		if m.Rule == "" {
 			return fmt.Errorf("rule is required")

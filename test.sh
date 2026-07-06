@@ -1,0 +1,1 @@
+for h in 10.2.70.100 10.2.70.101 10.2.70.103; do ssh -t yacuser@$h "sudo pg_enc -m -k /etc/pgpool2/.pgpoolkey -u gjallar '$(grep -m1 PASSWORD create-gjallar-user-mediainsights.sql | sed "s/.*PASSWORD '//;s/'.*//")' && sudo systemctl reload pgpool2"; done

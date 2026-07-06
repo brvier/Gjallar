@@ -3,3 +3,4 @@
 *.db-wal
 *.db-shm
 gjallar.yaml
+create-gjallar-user-mediainsights.sql

@@ -3,6 +3,14 @@
 All notable changes to Gjallar are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.0] - 2026-07-06
+
+### Added
+
+- Elasticsearch check type (`type: elasticsearch`): index freshness measured
+  as hours since `max(timestamp_field)`, evaluated against a rule (e.g. "< 3").
+  Fields: `url`, `index`, `timestamp_field`, `rule`.
+
 ## [0.6.0] - 2026-07-06
 
 ### Added

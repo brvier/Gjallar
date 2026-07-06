@@ -41,6 +41,8 @@ func New(m config.Monitor) (Checker, error) {
 		c, err = newPingCheck(m)
 	case "redis":
 		c, err = newRedisCheck(m)
+	case "elasticsearch":
+		c, err = newESCheck(m)
 	case "prometheus":
 		c, err = newPromCheck(m)
 	default:

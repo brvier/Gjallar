@@ -96,6 +96,14 @@ monitors:
     port: 6379            # default 6379
     password: "${REDIS_PASSWORD}"   # omit if no AUTH
 
+  # --- Elasticsearch index freshness: hours since max(timestamp_field) ---
+  - name: es-broadcasts
+    type: elasticsearch
+    url: "http://es-host:9200"
+    index: "broadcasts"
+    timestamp_field: "start_date"
+    rule: "< 3"           # alert if the newest document is more than 3h old
+
   # --- Prometheus metrics: rule must hold for every matching series ---
   - name: node1-disk
     type: prometheus
