@@ -92,7 +92,8 @@ type IncidentView struct {
 type GroupView struct {
 	Name     string // empty = ungrouped
 	Up       int
-	Total    int
+	Total    int // enabled monitors only
+	Disabled int
 	Monitors []MonitorView
 }
 
@@ -164,6 +165,10 @@ func (s *Server) overview() overviewData {
 		}
 		g := &d.Groups[gi]
 		g.Monitors = append(g.Monitors, v)
+		if v.Status == "disabled" {
+			g.Disabled++
+			continue // disabled monitors don't count toward up/total health
+		}
 		g.Total++
 		if v.Status == "up" {
 			g.Up++
@@ -181,6 +186,10 @@ func (s *Server) overview() overviewData {
 
 func (s *Server) monitorView(m config.Monitor) MonitorView {
 	v := MonitorView{Name: m.Name, Type: m.Type, Status: "pending", Latency: "—", Uptime24h: "—"}
+	if !m.IsEnabled() {
+		v.Status = "disabled"
+		return v // no checks run, nothing to read from the store
+	}
 
 	results, err := s.st.RecentResults(m.Name, tickCount)
 	if err != nil {
@@ -229,12 +238,15 @@ func (s *Server) detail(name string) (detailData, bool) {
 		Type:   mon.Type,
 		Status: "pending", Uptime24h: "—", Uptime30d: "—",
 	}
+	if !mon.IsEnabled() {
+		d.Status = "disabled"
+	}
 	rows, err := s.st.RecentResults(name, historyCount)
 	if err != nil {
 		slog.Error("loading results", "monitor", name, "error", err)
 	}
 	d.Rows = rows
-	if len(rows) > 0 {
+	if mon.IsEnabled() && len(rows) > 0 {
 		if rows[0].OK {
 			d.Status = "up"
 		} else {

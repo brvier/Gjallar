@@ -43,6 +43,9 @@ type Engine struct {
 func NewEngine(cfg *config.Config, st *store.Store, notifiers map[string]Notifier) (*Engine, error) {
 	e := &Engine{st: st, notifiers: notifiers, states: map[string]*monitorState{}}
 	for _, m := range cfg.Monitors {
+		if !m.IsEnabled() {
+			continue // disabled monitors produce no results, need no state
+		}
 		s := &monitorState{threshold: m.FailureThreshold, realert: m.Realert.D(), notifiers: m.Alerts}
 		open, err := st.HasOpenIncident(m.Name)
 		if err != nil {

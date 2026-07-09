@@ -3,12 +3,12 @@
 {{if .Name}}
 <div class="group-head">
   <h2>{{.Name}}</h2>
-  <span class="group-count{{if lt .Up .Total}} bad{{end}}">{{.Up}}/{{.Total}} up</span>
+  <span class="group-count{{if lt .Up .Total}} bad{{end}}">{{.Up}}/{{.Total}} up{{if .Disabled}} · {{.Disabled}} disabled{{end}}</span>
 </div>
 {{end}}
 <section class="cards">
 {{range .Monitors}}
-  <article class="card">
+  <article class="card{{if eq .Status "disabled"}} disabled{{end}}">
     <div class="card-head">
       <a class="mon-name" href="/monitor/{{.Name}}">{{.Name}}</a>
       <span class="mon-type">{{.Type}}</span>

@@ -163,6 +163,35 @@ monitors:
 	}
 }
 
+func TestEnabledDefault(t *testing.T) {
+	cfg, err := Load(writeConfig(t, `
+monitors:
+  - name: a
+    type: ping
+    host: h
+  - name: b
+    type: ping
+    host: h
+    enabled: false
+  - name: c
+    type: ping
+    host: h
+    enabled: true
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.Monitors[0].IsEnabled() {
+		t.Error("a: default should be enabled")
+	}
+	if cfg.Monitors[1].IsEnabled() {
+		t.Error("b: enabled:false should be disabled")
+	}
+	if !cfg.Monitors[2].IsEnabled() {
+		t.Error("c: enabled:true should be enabled")
+	}
+}
+
 func TestLoadErrors(t *testing.T) {
 	cases := []struct {
 		name, yaml, wantErr string

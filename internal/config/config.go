@@ -60,8 +60,9 @@ type Alert struct {
 
 type Monitor struct {
 	Name             string   `yaml:"name"`
-	Group            string   `yaml:"group"` // optional; groups monitors on the status page
-	Type             string   `yaml:"type"`  // http | postgres | oracle | ping | prometheus
+	Group            string   `yaml:"group"`   // optional; groups monitors on the status page
+	Enabled          *bool    `yaml:"enabled"` // default true; false = listed but not checked
+	Type             string   `yaml:"type"`    // http | postgres | oracle | ping | prometheus
 	Interval         Duration `yaml:"interval"`
 	Timeout          Duration `yaml:"timeout"`
 	FailureThreshold int      `yaml:"failure_threshold"`
@@ -96,6 +97,11 @@ type Monitor struct {
 	Index          string `yaml:"index"`
 	TimestampField string `yaml:"timestamp_field"` // freshness = hours since max(this field)
 }
+
+// IsEnabled reports whether the monitor should be scheduled. A monitor with no
+// `enabled` key defaults to enabled; `enabled: false` lists it on the status
+// page as intentionally disabled without running any check or alert.
+func (m Monitor) IsEnabled() bool { return m.Enabled == nil || *m.Enabled }
 
 var monitorTypes = map[string]bool{
 	"http": true, "postgres": true, "oracle": true, "ping": true, "prometheus": true, "redis": true,

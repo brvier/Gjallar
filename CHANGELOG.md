@@ -3,6 +3,14 @@
 All notable changes to Gjallar are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.8.0] - 2026-07-06
+
+### Added
+
+- `enabled: false` on a monitor: keep it on the status page (shown as a grey
+  DISABLED badge, excluded from the up/total count) without running any check
+  or alert. Defaults to enabled.
+
 ## [0.7.0] - 2026-07-06
 
 ### Added

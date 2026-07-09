@@ -113,6 +113,9 @@ func prepare(cfg *config.Config) (*prepared, error) {
 	p := &prepared{checkers: make([]check.Checker, len(cfg.Monitors))}
 	var err error
 	for i, m := range cfg.Monitors {
+		if !m.IsEnabled() {
+			continue // disabled monitors are listed but never built or run
+		}
 		if p.checkers[i], err = check.New(m); err != nil {
 			return nil, err
 		}
@@ -164,6 +167,9 @@ func start(cfg *config.Config, p *prepared) (*instance, error) {
 	// consumer (one SQLite writer, lock-free alert state machine).
 	results := make(chan check.Result, len(cfg.Monitors))
 	for i, m := range cfg.Monitors {
+		if !m.IsEnabled() {
+			continue // disabled: shown on the page, never scheduled
+		}
 		inst.runners.Add(1)
 		go func(m config.Monitor, c check.Checker) {
 			defer inst.runners.Done()
@@ -218,7 +224,7 @@ func (i *instance) stop() {
 func pingSelfTest(cfg *config.Config) error {
 	tested := map[bool]bool{}
 	for _, m := range cfg.Monitors {
-		if m.Type == "ping" && !tested[m.Privileged] {
+		if m.Type == "ping" && m.IsEnabled() && !tested[m.Privileged] {
 			tested[m.Privileged] = true
 			if err := check.SelfTestPing(m.Privileged); err != nil {
 				return err

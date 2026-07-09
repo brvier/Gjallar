@@ -62,6 +62,20 @@ Gjallar reloads its configuration on `SIGHUP` (`systemctl reload gjallar`).
 The new config is fully validated first — if it is broken, the running
 configuration is kept and the error is logged.
 
+### Disabling a monitor
+
+Set `enabled: false` on a monitor to stop checking and alerting on it while
+keeping it on the status page, shown with a grey **DISABLED** badge and
+excluded from the group's up/total count. Omitting `enabled` (or `true`)
+leaves it active.
+
+```yaml
+  - name: "legacy-api"
+    type: http
+    url: "http://legacy/health"
+    enabled: false      # listed as disabled, never checked
+```
+
 ### Groups
 
 Give monitors an optional `group: "Hyperion"` and the status page shows them
