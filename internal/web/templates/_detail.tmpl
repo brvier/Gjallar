@@ -4,6 +4,10 @@
   <span class="pill {{.Status}}">{{.Status}}</span>
 </div>
 
+{{if eq .Status "disabled"}}
+<div class="banner-disabled">⏸ This monitor is disabled — no checks are running and no alerts are sent.</div>
+{{end}}
+
 <div class="stats">
   <div class="stat"><strong>{{.Uptime24h}}</strong><small>uptime 24h</small></div>
   <div class="stat"><strong>{{.Uptime30d}}</strong><small>uptime 30d</small></div>

@@ -82,9 +82,17 @@ h2 { border-left: 4px solid var(--red); padding-left: 10px; }
 .pill.up { background: #1f2a1f; color: var(--ok); border: 1px solid #3a4a3a; }
 .pill.down { background: var(--red-dark); color: #fff; border: 1px solid var(--red); }
 .pill.pending { background: #26262c; color: var(--muted); border: 1px solid var(--border); }
-.pill.disabled { background: #26262c; color: var(--muted); border: 1px dashed #4a4a52; }
-.card.disabled { opacity: .55; }
+.pill.disabled { background: #3a3a42; color: #cfcfd6; border: 1px dashed #6a6a72; }
+.card.disabled { opacity: .75; border-style: dashed; }
 .card.disabled .ticks { display: none; }
+.banner-disabled {
+  background: #26262c;
+  border: 1px dashed #6a6a72;
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 12px 0;
+}
 
 /* uptime bars (oldest → newest) */
 .ticks { display: flex; gap: 2px; margin-top: 10px; }
