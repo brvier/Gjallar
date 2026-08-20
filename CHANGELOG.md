@@ -3,6 +3,13 @@
 All notable changes to Gjallar are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.9.0] - 2026-08-20
+
+### Added
+
+- Signal notifier authentication: optional `token` (Bearer) or `user`/`pass`
+  (HTTP Basic) for gateways that require auth.
+
 ## [0.8.1] - 2026-07-06
 
 ### Changed

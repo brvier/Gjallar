@@ -56,6 +56,7 @@ type Alert struct {
 	// signal
 	Number     string   `yaml:"number"`     // sender number registered on the gateway
 	Recipients []string `yaml:"recipients"` // destination numbers
+	Token      string   `yaml:"token"`      // optional Bearer token for a protected gateway
 }
 
 type Monitor struct {

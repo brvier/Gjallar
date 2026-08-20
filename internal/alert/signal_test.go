@@ -23,7 +23,7 @@ func TestSignal(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	s := NewSignal(srv.URL, "+33616400522", []string{"+33689816957", "+33616400522"})
+	s := NewSignal(srv.URL, "+33616400522", []string{"+33689816957", "+33616400522"}, "", "", "")
 	if err := s.Send(context.Background(), "[Gjallar] DOWN: web", "web — boom"); err != nil {
 		t.Fatal(err)
 	}
@@ -40,6 +40,36 @@ func TestSignal(t *testing.T) {
 	status = 400
 	if err := s.Send(context.Background(), "t", "m"); err == nil || !strings.Contains(err.Error(), "status 400") {
 		t.Errorf("err = %v", err)
+	}
+}
+
+func TestSignalAuth(t *testing.T) {
+	var auth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth = r.Header.Get("Authorization")
+		w.WriteHeader(201)
+	}))
+	defer srv.Close()
+
+	// Bearer takes precedence.
+	s := NewSignal(srv.URL, "+336", []string{"+337"}, "tok123", "u", "p")
+	s.Send(context.Background(), "t", "m")
+	if auth != "Bearer tok123" {
+		t.Errorf("bearer: got %q", auth)
+	}
+
+	// Basic when no token.
+	s = NewSignal(srv.URL, "+336", []string{"+337"}, "", "user", "pass")
+	s.Send(context.Background(), "t", "m")
+	if !strings.HasPrefix(auth, "Basic ") {
+		t.Errorf("basic: got %q", auth)
+	}
+
+	// No auth when nothing configured.
+	s = NewSignal(srv.URL, "+336", []string{"+337"}, "", "", "")
+	s.Send(context.Background(), "t", "m")
+	if auth != "" {
+		t.Errorf("no-auth: got %q", auth)
 	}
 }
 

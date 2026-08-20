@@ -38,6 +38,10 @@ alerts:
     url: "https://signal-api.example.com/v2/send"
     number: "+33600000000"              # sender registered on the gateway
     recipients: ["+33611111111", "+33622222222"]
+    # If the gateway is protected, set ONE of:
+    # token: "${SIGNAL_TOKEN}"          # Bearer token
+    # user: "gjallar"                   # or HTTP Basic
+    # pass: "${SIGNAL_PASS}"
 
 monitors:
   # --- HTTP/HTTPS: status code, body regex, TLS certificate expiry ---
