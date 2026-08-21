@@ -3,6 +3,15 @@
 All notable changes to Gjallar are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.10.0] - 2026-08-21
+
+### Added
+
+- On startup, purge stored results and incidents for monitors removed from the
+  config. Fixes decommissioned hosts lingering in the incidents list with an
+  incident that could never be resolved. Disabled monitors (still in config)
+  keep their history.
+
 ## [0.9.0] - 2026-08-20
 
 ### Added

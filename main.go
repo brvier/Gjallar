@@ -144,6 +144,17 @@ func start(cfg *config.Config, p *prepared) (*instance, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Drop history and any lingering (possibly open) incidents for monitors
+	// removed from the config, so a decommissioned host stops appearing.
+	names := make([]string, len(cfg.Monitors))
+	for i, m := range cfg.Monitors {
+		names[i] = m.Name
+	}
+	if n, err := st.PruneOrphans(names); err != nil {
+		slog.Error("pruning removed monitors", "error", err)
+	} else if n > 0 {
+		slog.Info("pruned data for removed monitors", "rows", n)
+	}
 	engine, err := alert.NewEngine(cfg, st, p.notifiers)
 	if err != nil {
 		st.Close()

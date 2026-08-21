@@ -97,6 +97,42 @@ func TestIncidents(t *testing.T) {
 	}
 }
 
+func TestPruneOrphans(t *testing.T) {
+	s := openTemp(t)
+	now := time.Now()
+	// kept + removed monitors, each with a result and an open incident
+	s.InsertResult("web", now, true, time.Millisecond, "")
+	s.InsertResult("old-host", now, false, time.Millisecond, "down")
+	s.OpenIncident("web", "x", now)
+	s.OpenIncident("old-host", "gone", now) // open, would linger forever
+
+	n, err := s.PruneOrphans([]string{"web"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 2 { // one result + one incident for old-host
+		t.Errorf("rows removed = %d, want 2", n)
+	}
+	if rows, _ := s.RecentResults("old-host", 10); len(rows) != 0 {
+		t.Errorf("old-host results remain: %d", len(rows))
+	}
+	if rows, _ := s.RecentResults("web", 10); len(rows) != 1 {
+		t.Errorf("web results should be kept: %d", len(rows))
+	}
+	incs, _ := s.Incidents(10)
+	if len(incs) != 1 || incs[0].Monitor != "web" {
+		t.Errorf("only web incident should remain: %+v", incs)
+	}
+
+	// empty keep must be a no-op (never wipe everything)
+	if n, _ := s.PruneOrphans(nil); n != 0 {
+		t.Errorf("empty keep removed %d rows, want 0", n)
+	}
+	if rows, _ := s.RecentResults("web", 10); len(rows) != 1 {
+		t.Error("empty keep must not delete anything")
+	}
+}
+
 func TestPrune(t *testing.T) {
 	s := openTemp(t)
 	old := time.Now().Add(-48 * time.Hour)

@@ -77,6 +77,11 @@ leaves it active.
     enabled: false      # listed as disabled, never checked
 ```
 
+Removing a monitor from the config entirely (rather than disabling it) purges
+its history and incidents at the next startup, so a decommissioned host stops
+appearing, including any incident left open when it went away. Use
+`enabled: false` when you want to keep the monitor and its history.
+
 ### Groups
 
 Give monitors an optional `group: "Hyperion"` and the status page shows them

@@ -4,6 +4,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite" // pure-Go database/sql driver "sqlite"
@@ -193,6 +194,34 @@ func (s *Store) Prune(olderThan time.Time) error {
 	}
 	_, err := s.db.Exec(`DELETE FROM incidents WHERE resolved_at IS NOT NULL AND resolved_at < ?`, cutoff)
 	return err
+}
+
+// PruneOrphans deletes all results and incidents for monitors whose names are
+// not in keep (i.e. removed from the config). Returns the number of rows
+// removed. Disabled monitors stay in the config so they are preserved; only a
+// full removal purges history, which also clears any incident left open when a
+// decommissioned monitor could no longer be resolved. keep must be non-empty.
+func (s *Store) PruneOrphans(keep []string) (int64, error) {
+	if len(keep) == 0 {
+		return 0, nil // never wipe everything on an empty config
+	}
+	placeholders := strings.Repeat("?,", len(keep))
+	placeholders = placeholders[:len(placeholders)-1]
+	args := make([]any, len(keep))
+	for i, n := range keep {
+		args[i] = n
+	}
+	var total int64
+	for _, table := range []string{"results", "incidents"} {
+		res, err := s.db.Exec(`DELETE FROM `+table+` WHERE monitor NOT IN (`+placeholders+`)`, args...)
+		if err != nil {
+			return total, err
+		}
+		if n, err := res.RowsAffected(); err == nil {
+			total += n
+		}
+	}
+	return total, nil
 }
 
 func boolToInt(b bool) int {
