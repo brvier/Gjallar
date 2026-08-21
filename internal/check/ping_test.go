@@ -22,6 +22,10 @@ func TestPingLocalhost(t *testing.T) {
 	if ok, msg := c.Check(context.Background()); !ok {
 		t.Errorf("ping 127.0.0.1 failed: %s", msg)
 	}
+	// Latency must be the ICMP RTT, not the ~200ms inter-probe interval.
+	if rtt := c.Latency(); rtt <= 0 || rtt >= 200*time.Millisecond {
+		t.Errorf("Latency() = %v, want a real localhost RTT", rtt)
+	}
 }
 
 func TestPingUnreachable(t *testing.T) {
@@ -38,5 +42,8 @@ func TestPingUnreachable(t *testing.T) {
 	}
 	if ok, msg := c.Check(context.Background()); ok {
 		t.Errorf("expected failure, got ok (%s)", msg)
+	}
+	if rtt := c.Latency(); rtt != 0 {
+		t.Errorf("Latency() = %v after failed check, want 0", rtt)
 	}
 }

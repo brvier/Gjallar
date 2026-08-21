@@ -24,6 +24,14 @@ type Checker interface {
 	Check(ctx context.Context) (ok bool, message string)
 }
 
+// LatencyReporter is optionally implemented by checkers that measure a truer
+// latency than the wall-clock duration of Check (e.g. ping's ICMP RTT, which
+// excludes the inter-probe interval). A non-positive value means no
+// measurement is available and the wall-clock duration is used instead.
+type LatencyReporter interface {
+	Latency() time.Duration
+}
+
 // New builds a Checker from a validated monitor config.
 func New(m config.Monitor) (Checker, error) {
 	var (
@@ -87,11 +95,17 @@ func runOnce(ctx context.Context, m config.Monitor, c Checker) Result {
 	defer cancel()
 	start := time.Now()
 	ok, msg := c.Check(cctx)
+	latency := time.Since(start)
+	if lr, isLR := c.(LatencyReporter); isLR {
+		if l := lr.Latency(); l > 0 {
+			latency = l
+		}
+	}
 	return Result{
 		Monitor: m.Name,
 		Time:    start,
 		OK:      ok,
-		Latency: time.Since(start),
+		Latency: latency,
 		Message: msg,
 	}
 }

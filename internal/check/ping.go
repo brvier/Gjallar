@@ -15,6 +15,7 @@ type pingCheck struct {
 	count      int
 	privileged bool
 	timeout    time.Duration
+	lastRTT    time.Duration
 }
 
 func newPingCheck(m config.Monitor) (*pingCheck, error) {
@@ -27,6 +28,7 @@ func newPingCheck(m config.Monitor) (*pingCheck, error) {
 }
 
 func (c *pingCheck) Check(ctx context.Context) (bool, string) {
+	c.lastRTT = 0
 	pinger, err := probing.NewPinger(c.host)
 	if err != nil {
 		return false, err.Error()
@@ -43,11 +45,17 @@ func (c *pingCheck) Check(ctx context.Context) (bool, string) {
 	if stats.PacketsRecv == 0 {
 		return false, fmt.Sprintf("no reply from %s (%d packets sent)", c.host, stats.PacketsSent)
 	}
+	c.lastRTT = stats.AvgRtt
 	if stats.PacketLoss > 0 {
 		return true, fmt.Sprintf("%.0f%% loss, avg %s", stats.PacketLoss, stats.AvgRtt.Round(time.Millisecond))
 	}
 	return true, ""
 }
+
+// Latency reports the measured ICMP round-trip time instead of the wall-clock
+// duration of Check, which includes the 200ms inter-probe interval. Safe
+// without locking: each monitor's Checker runs sequentially in one goroutine.
+func (c *pingCheck) Latency() time.Duration { return c.lastRTT }
 
 // SelfTestPing pings 127.0.0.1 once so a missing capability or sysctl fails
 // at startup with an actionable message instead of every check failing forever.
