@@ -1,0 +1,11 @@
+-- Droits de lecture du role gjallar pour le monitor "Reco subgroups muets (1h)"
+-- sur 10.2.70.100:5432 / reco_orchestrator.
+--
+-- Le role existait deja (monitor "Reco results (1h)" sur public.results), mais
+-- sans acces aux deux tables dont la sonde a besoin :
+--   - reco_recognition_configs : la liste des subgroups CONFIGURES, point de
+--     depart de la sonde. Partir des taches observees laisserait passer un
+--     subgroup totalement muet, exactement le trou qui a masque la mort du MPM
+--     du 2026-06-18 au 2026-09-02.
+--   - tasks_v2 : les taches terminees sur la derniere heure.
+GRANT SELECT ON public.reco_recognition_configs, public.tasks_v2 TO gjallar;
