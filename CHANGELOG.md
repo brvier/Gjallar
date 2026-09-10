@@ -3,6 +3,28 @@
 All notable changes to Gjallar are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.11.0] - 2026-09-10
+
+### Added
+
+- Intermediate **warning** state: a check that passes but reports a message
+  (TLS certificate close to expiry, partial ping packet loss) shows the monitor
+  in amber on the status page, the card, the detail page and the check history.
+  After `failure_threshold` consecutive warning checks a single
+  `[Gjallar] WARNING` notification is sent, and `[Gjallar] WARNING CLEARED`
+  when it goes away. Warnings open no incident, leave uptime untouched and
+  survive restarts/reloads without re-notifying.
+
+### Fixed
+
+- `cert_expiry_warn` no longer declares a working service DOWN: a certificate
+  inside the warn window is a warning, only an expired one fails (#2).
+
+### Changed
+
+- Partial packet loss on a `ping` monitor, previously displayed but silent,
+  now raises a warning notification like any other warning.
+
 ## [0.10.0] - 2026-08-21
 
 ### Added
