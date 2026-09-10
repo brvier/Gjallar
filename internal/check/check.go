@@ -16,10 +16,19 @@ type Result struct {
 	Time    time.Time
 	OK      bool
 	Latency time.Duration
-	Message string // empty on success, human-readable failure reason otherwise
+	Message string // failure reason when !OK; warning reason when OK (empty = all clear)
 }
 
+// Warning reports a degraded-but-up result: the check passed yet flagged a
+// condition worth surfacing (TLS certificate close to expiry, partial packet
+// loss). Warnings never open incidents nor count against uptime.
+func (r Result) Warning() bool { return r.OK && r.Message != "" }
+
 // Checker runs one probe. Implementations must honor ctx cancellation.
+//
+// Convention: ok=false with a message is a failure; ok=true with an empty
+// message is a clean pass; ok=true with a non-empty message is a warning (the
+// service is up, but the message describes a condition to look at).
 type Checker interface {
 	Check(ctx context.Context) (ok bool, message string)
 }

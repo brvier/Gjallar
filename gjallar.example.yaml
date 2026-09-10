@@ -55,7 +55,7 @@ monitors:
       Authorization: "Bearer xyz"
     expect_status: 200                # assert exact status code (omit = any 2xx)
     body_regex: '"status"\s*:\s*"ok"' # response body must match
-    cert_expiry_warn: 336h            # fail if TLS cert expires within 14 days (omit = disabled)
+    cert_expiry_warn: 336h            # WARNING (amber, stays up) if TLS cert expires within 14 days (omit = disabled)
     interval: 30s
     timeout: 5s
     alerts: [ops-telegram, sms-boss]

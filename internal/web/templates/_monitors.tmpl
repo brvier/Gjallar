@@ -3,7 +3,7 @@
 {{if .Name}}
 <div class="group-head">
   <h2>{{.Name}}</h2>
-  <span class="group-count{{if lt .Up .Total}} bad{{end}}">{{.Up}}/{{.Total}} up{{if .Disabled}} · {{.Disabled}} disabled{{end}}</span>
+  <span class="group-count{{if lt .Up .Total}} bad{{else if .Warning}} warn{{end}}">{{.Up}}/{{.Total}} up{{if .Warning}} · {{.Warning}} warning{{end}}{{if .Disabled}} · {{.Disabled}} disabled{{end}}</span>
 </div>
 {{end}}
 <section class="cards">
@@ -14,8 +14,9 @@
       <span class="mon-type">{{.Type}}</span>
       <span class="pill {{.Status}}">{{.Status}}</span>
     </div>
+    {{if .Message}}<div class="card-msg">⚠ {{.Message}}</div>{{end}}
     <div class="ticks">
-      {{range .Ticks}}<span class="tick {{if .Known}}{{if .OK}}ok{{else}}fail{{end}}{{else}}empty{{end}}"{{if .Title}} title="{{.Title}}"{{end}}></span>{{end}}
+      {{range .Ticks}}<span class="tick {{if .Known}}{{if .Warning}}warn{{else if .OK}}ok{{else}}fail{{end}}{{else}}empty{{end}}"{{if .Title}} title="{{.Title}}"{{end}}></span>{{end}}
     </div>
     <div class="card-foot">
       <span>{{.Latency}}</span>

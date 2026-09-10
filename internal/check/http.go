@@ -74,12 +74,18 @@ func (c *httpCheck) Check(ctx context.Context) (bool, string) {
 		}
 	}
 
-	// Chain validity is already enforced by the TLS handshake; here we only
-	// warn ahead of expiry.
+	// Chain validity is already enforced by the TLS handshake, so an expired
+	// certificate normally fails above; the explicit expiry test only guards
+	// against relaxed verification or clock skew. Ahead of expiry the check
+	// stays OK and carries a warning message instead of failing (issue #2).
 	if c.certExpiryWarn > 0 && resp.TLS != nil && len(resp.TLS.PeerCertificates) > 0 {
 		notAfter := resp.TLS.PeerCertificates[0].NotAfter
-		if left := time.Until(notAfter); left < c.certExpiryWarn {
-			return false, fmt.Sprintf("TLS certificate expires in %s (%s)",
+		left := time.Until(notAfter)
+		if left <= 0 {
+			return false, fmt.Sprintf("TLS certificate expired on %s", notAfter.Format("2006-01-02"))
+		}
+		if left < c.certExpiryWarn {
+			return true, fmt.Sprintf("TLS certificate expires in %s (%s)",
 				formatDays(left), notAfter.Format("2006-01-02"))
 		}
 	}
@@ -87,9 +93,6 @@ func (c *httpCheck) Check(ctx context.Context) (bool, string) {
 }
 
 func formatDays(d time.Duration) string {
-	if d < 0 {
-		return "the past — already expired"
-	}
 	if d >= 48*time.Hour {
 		return fmt.Sprintf("%dd", int(d.Hours()/24))
 	}

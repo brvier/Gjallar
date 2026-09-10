@@ -24,14 +24,21 @@ type monitorState struct {
 	consecFails  int
 	downSince    time.Time
 	lastNotified time.Time
+	warning      bool // up but degraded (check.Result.Warning); never an incident
+	consecWarns  int
 	threshold    int
 	realert      time.Duration // reminder interval while down; 0 = disabled
 	notifiers    []string
 }
 
-// Engine is a per-monitor up/down state machine. Process must be called from
-// a single goroutine (the pipeline consumer); notifier sends are dispatched
-// asynchronously so a slow channel never blocks the pipeline.
+// Engine is a per-monitor up/warning/down state machine. Process must be
+// called from a single goroutine (the pipeline consumer); notifier sends are
+// dispatched asynchronously so a slow channel never blocks the pipeline.
+//
+// DOWN opens an incident after threshold consecutive failures and UP resolves
+// it. WARNING is notified after threshold consecutive warning results and
+// WARNING CLEARED on the first clean pass; warnings open no incident and are
+// never re-alerted.
 type Engine struct {
 	st        *store.Store
 	notifiers map[string]Notifier
@@ -39,7 +46,9 @@ type Engine struct {
 }
 
 // NewEngine builds the engine and seeds each monitor's state from any open
-// incident, so a restart neither re-fires DOWN alerts nor misses recovery.
+// incident (so a restart neither re-fires DOWN alerts nor misses recovery) or,
+// failing that, from the last stored result (so a restart or SIGHUP reload
+// does not re-fire a WARNING that was already notified).
 func NewEngine(cfg *config.Config, st *store.Store, notifiers map[string]Notifier) (*Engine, error) {
 	e := &Engine{st: st, notifiers: notifiers, states: map[string]*monitorState{}}
 	for _, m := range cfg.Monitors {
@@ -56,6 +65,15 @@ func NewEngine(cfg *config.Config, st *store.Store, notifiers map[string]Notifie
 			s.consecFails = m.FailureThreshold
 			s.downSince = time.Now()
 			s.lastNotified = time.Now()
+		} else {
+			last, err := st.RecentResults(m.Name, 1)
+			if err != nil {
+				return nil, err
+			}
+			if len(last) == 1 && last[0].Warning() {
+				s.warning = true
+				s.consecWarns = m.FailureThreshold
+			}
 		}
 		e.states[m.Name] = s
 	}
@@ -71,20 +89,29 @@ func (e *Engine) Process(r check.Result) {
 	case r.OK && s.down:
 		s.down = false
 		s.consecFails = 0
+		// Adopt any warning silently: one UP message, not UP then WARNING.
+		s.warning = r.Warning()
+		s.consecWarns = 0
 		downFor := r.Time.Sub(s.downSince).Round(time.Second)
 		if err := e.st.ResolveIncident(r.Monitor, r.Time); err != nil {
 			slog.Error("resolving incident", "monitor", r.Monitor, "error", err)
 		}
-		e.notify(s, fmt.Sprintf("[Gjallar] UP: %s", r.Monitor),
-			fmt.Sprintf("%s recovered after %s", r.Monitor, downFor))
+		msg := fmt.Sprintf("%s recovered after %s", r.Monitor, downFor)
+		if s.warning {
+			msg += " - " + r.Message
+		}
+		e.notify(s, fmt.Sprintf("[Gjallar] UP: %s", r.Monitor), msg)
 	case r.OK:
 		s.consecFails = 0
+		e.processWarning(s, r)
 	case !s.down:
 		s.consecFails++
 		if s.consecFails >= s.threshold {
 			s.down = true
 			s.downSince = r.Time
 			s.lastNotified = r.Time
+			s.warning = false // the incident supersedes any warning
+			s.consecWarns = 0
 			if err := e.st.OpenIncident(r.Monitor, r.Message, r.Time); err != nil {
 				slog.Error("opening incident", "monitor", r.Monitor, "error", err)
 			}
@@ -98,6 +125,27 @@ func (e *Engine) Process(r check.Result) {
 				fmt.Sprintf("%s still down after %s — %s", r.Monitor,
 					r.Time.Sub(s.downSince).Round(time.Second), r.Message))
 		}
+	}
+}
+
+// processWarning handles an OK result for a monitor that is not down: enter
+// the warning state after threshold consecutive warning results, leave it on
+// the first clean pass. Each transition is notified once.
+func (e *Engine) processWarning(s *monitorState, r check.Result) {
+	if r.Warning() {
+		s.consecWarns++
+		if !s.warning && s.consecWarns >= s.threshold {
+			s.warning = true
+			e.notify(s, fmt.Sprintf("[Gjallar] WARNING: %s", r.Monitor),
+				fmt.Sprintf("%s - %s (%d consecutive warnings)", r.Monitor, r.Message, s.consecWarns))
+		}
+		return
+	}
+	s.consecWarns = 0
+	if s.warning {
+		s.warning = false
+		e.notify(s, fmt.Sprintf("[Gjallar] WARNING CLEARED: %s", r.Monitor),
+			fmt.Sprintf("%s back to normal", r.Monitor))
 	}
 }
 

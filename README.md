@@ -32,6 +32,7 @@ Rules: `> N`, `>= N`, `< N`, `<= N`, `== x`, `!= x`, `~ regex`, `rows > 0` (row 
 
 A monitor alerts after `failure_threshold` consecutive failures (no flapping noise),
 and again on recovery. Open incidents survive restarts: no duplicate alerts.
+Degraded-but-up conditions raise an amber [warning](#warnings) instead of an outage.
 
 ## Quick start
 
@@ -93,6 +94,23 @@ listed first, without a header. Groups appear in config order.
 By default a monitor alerts once when it goes down and once when it recovers.
 Set `realert: 1h` (globally in `defaults` or per monitor) to also get a
 "still down" reminder at that interval during long outages.
+
+### Warnings
+
+Some conditions are worth a heads-up but are not an outage: a TLS certificate
+approaching expiry (`cert_expiry_warn`), partial packet loss on a `ping`
+monitor. A check that passes but reports a message like that puts the monitor
+in an amber **WARNING** state:
+
+- The service stays **up**: no incident is opened and uptime figures are
+  untouched.
+- The message is shown on the card, the detail page and in the check history.
+- After `failure_threshold` consecutive warning checks, a single
+  `[Gjallar] WARNING` notification is sent to the monitor's alert channels; a
+  `[Gjallar] WARNING CLEARED` follows when the condition goes away. There is no
+  periodic reminder. The state survives restarts and reloads, so a warning is
+  never notified twice.
+- A real failure takes precedence: DOWN/UP alerts and incidents work as usual.
 
 ## Ping permissions
 

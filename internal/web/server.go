@@ -67,15 +67,17 @@ func (s *Server) Handler() http.Handler { return s.mux }
 // --- view models ---
 
 type Tick struct {
-	Known bool // false renders an empty placeholder
-	OK    bool
-	Title string
+	Known   bool // false renders an empty placeholder
+	OK      bool
+	Warning bool // OK with a message: rendered amber
+	Title   string
 }
 
 type MonitorView struct {
 	Name      string
 	Type      string
-	Status    string // up | down | pending
+	Status    string // up | warning | down | pending | disabled
+	Message   string // last result's message; shown on the card while warning
 	Latency   string
 	Uptime24h string
 	Ticks     []Tick
@@ -91,7 +93,8 @@ type IncidentView struct {
 
 type GroupView struct {
 	Name     string // empty = ungrouped
-	Up       int
+	Up       int    // includes warnings: the service is up
+	Warning  int
 	Total    int // enabled monitors only
 	Disabled int
 	Monitors []MonitorView
@@ -108,6 +111,7 @@ type detailData struct {
 	Name      string
 	Type      string
 	Status    string
+	Message   string // current warning message, if any
 	Uptime24h string
 	Uptime30d string
 	Sparkline template.HTML
@@ -170,8 +174,12 @@ func (s *Server) overview() overviewData {
 			continue // disabled monitors don't count toward up/total health
 		}
 		g.Total++
-		if v.Status == "up" {
+		switch v.Status {
+		case "up":
 			g.Up++
+		case "warning":
+			g.Up++
+			g.Warning++
 		}
 	}
 	incs, err := s.st.Incidents(incidentCount)
@@ -197,10 +205,9 @@ func (s *Server) monitorView(m config.Monitor) MonitorView {
 	}
 	if len(results) > 0 {
 		last := results[0]
-		if last.OK {
-			v.Status = "up"
-		} else {
-			v.Status = "down"
+		v.Status = statusOf(last)
+		if last.Warning() {
+			v.Message = last.Message
 		}
 		v.Latency = fmtLatency(last.Latency)
 	}
@@ -215,7 +222,7 @@ func (s *Server) monitorView(m config.Monitor) MonitorView {
 		if r.Message != "" {
 			title += " · " + r.Message
 		}
-		v.Ticks[tickCount-1-i] = Tick{Known: true, OK: r.OK, Title: title}
+		v.Ticks[tickCount-1-i] = Tick{Known: true, OK: r.OK, Warning: r.Warning(), Title: title}
 	}
 	return v
 }
@@ -247,10 +254,9 @@ func (s *Server) detail(name string) (detailData, bool) {
 	}
 	d.Rows = rows
 	if mon.IsEnabled() && len(rows) > 0 {
-		if rows[0].OK {
-			d.Status = "up"
-		} else {
-			d.Status = "down"
+		d.Status = statusOf(rows[0])
+		if rows[0].Warning() {
+			d.Message = rows[0].Message
 		}
 	}
 	if up, count, err := s.st.UptimeSince(name, time.Now().Add(-24*time.Hour)); err == nil && count > 0 {
@@ -274,6 +280,19 @@ func (s *Server) detail(name string) (detailData, bool) {
 		d.Incidents = append(d.Incidents, incidentView(inc))
 	}
 	return d, true
+}
+
+// statusOf maps the latest result to the page status: warning is an OK result
+// carrying a message (see check.Result.Warning).
+func statusOf(r store.ResultRow) string {
+	switch {
+	case !r.OK:
+		return "down"
+	case r.Warning():
+		return "warning"
+	default:
+		return "up"
+	}
 }
 
 func incidentView(inc store.Incident) IncidentView {

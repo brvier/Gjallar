@@ -6,6 +6,8 @@
 
 {{if eq .Status "disabled"}}
 <div class="banner-disabled">⏸ This monitor is disabled — no checks are running and no alerts are sent.</div>
+{{else if eq .Status "warning"}}
+<div class="banner-warning">⚠ {{.Message}}</div>
 {{end}}
 
 <div class="stats">
@@ -47,7 +49,7 @@
     {{range .Rows}}
       <tr>
         <td>{{.Time.Format "2006-01-02 15:04:05"}}</td>
-        <td>{{if .OK}}<span class="pill up">ok</span>{{else}}<span class="pill down">fail</span>{{end}}</td>
+        <td>{{if .Warning}}<span class="pill warning">warn</span>{{else if .OK}}<span class="pill up">ok</span>{{else}}<span class="pill down">fail</span>{{end}}</td>
         <td>{{fmtLatency .Latency}}</td>
         <td class="reason">{{.Message}}</td>
       </tr>

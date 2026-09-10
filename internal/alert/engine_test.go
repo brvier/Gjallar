@@ -219,6 +219,138 @@ func TestRestartWithOpenIncident(t *testing.T) {
 	}
 }
 
+func TestWarningThresholdAndClear(t *testing.T) {
+	st, cfg, fake := testSetup(t)
+	e, _ := NewEngine(cfg, st, map[string]Notifier{"fake": fake})
+
+	// Two warnings: below threshold, silent.
+	e.Process(result(true, "expires in 13d"))
+	e.Process(result(true, "expires in 13d"))
+	if fake.count() != 0 {
+		t.Fatalf("premature warning: %v", fake.sent)
+	}
+
+	// Third warning crosses the threshold: one WARNING, no incident.
+	e.Process(result(true, "expires in 13d"))
+	sent := fake.waitSent(t, 1)
+	if !strings.Contains(sent[0], "WARNING: web") || !strings.Contains(sent[0], "expires in 13d") {
+		t.Errorf("warning alert = %q", sent[0])
+	}
+	if open, _ := st.HasOpenIncident("web"); open {
+		t.Fatal("a warning must not open an incident")
+	}
+
+	// Still warning: no repeat.
+	e.Process(result(true, "expires in 12d"))
+	if fake.count() != 1 {
+		t.Fatalf("repeat warning: %v", fake.sent)
+	}
+
+	// Clean pass clears it.
+	e.Process(result(true, ""))
+	sent = fake.waitSent(t, 2)
+	if !strings.Contains(sent[1], "WARNING CLEARED: web") {
+		t.Errorf("clear alert = %q", sent[1])
+	}
+	// And a further clean pass stays silent.
+	e.Process(result(true, ""))
+	if fake.count() != 2 {
+		t.Fatalf("spurious alert: %v", fake.sent)
+	}
+}
+
+func TestWarningBelowThreshold(t *testing.T) {
+	st, cfg, fake := testSetup(t)
+	e, _ := NewEngine(cfg, st, map[string]Notifier{"fake": fake})
+	for i := 0; i < 5; i++ {
+		e.Process(result(true, "33% loss"))
+		e.Process(result(true, "33% loss"))
+		e.Process(result(true, "")) // clean before the 3rd warning
+	}
+	if fake.count() != 0 {
+		t.Errorf("flapping warning below threshold alerted: %v", fake.sent)
+	}
+}
+
+func TestWarningThenDown(t *testing.T) {
+	st, cfg, fake := testSetup(t)
+	e, _ := NewEngine(cfg, st, map[string]Notifier{"fake": fake})
+
+	for i := 0; i < 3; i++ {
+		e.Process(result(true, "degraded"))
+	}
+	fake.waitSent(t, 1) // WARNING
+
+	for i := 0; i < 3; i++ {
+		e.Process(result(false, "boom"))
+	}
+	sent := fake.waitSent(t, 2)
+	if !strings.Contains(sent[1], "DOWN: web") {
+		t.Errorf("down alert = %q", sent[1])
+	}
+
+	// Clean recovery: UP only, no stale WARNING CLEARED.
+	e.Process(result(true, ""))
+	sent = fake.waitSent(t, 3)
+	if !strings.Contains(sent[2], "UP: web") {
+		t.Errorf("recovery = %q", sent[2])
+	}
+	e.Process(result(true, ""))
+	if fake.count() != 3 {
+		t.Fatalf("unexpected alert after recovery: %v", fake.sent)
+	}
+}
+
+func TestRecoveryWithWarningIsOneMessage(t *testing.T) {
+	st, cfg, fake := testSetup(t)
+	e, _ := NewEngine(cfg, st, map[string]Notifier{"fake": fake})
+	for i := 0; i < 3; i++ {
+		e.Process(result(false, "boom"))
+	}
+	fake.waitSent(t, 1)
+
+	// Recovering straight into a warning: a single UP carrying the message.
+	e.Process(result(true, "50% loss"))
+	sent := fake.waitSent(t, 2)
+	if !strings.Contains(sent[1], "UP: web") || !strings.Contains(sent[1], "50% loss") {
+		t.Errorf("recovery = %q", sent[1])
+	}
+	e.Process(result(true, "50% loss"))
+	e.Process(result(true, "50% loss"))
+	e.Process(result(true, "50% loss"))
+	if fake.count() != 2 {
+		t.Fatalf("WARNING re-fired after UP already carried it: %v", fake.sent)
+	}
+	// The warning state was adopted, so clearing it is notified.
+	e.Process(result(true, ""))
+	sent = fake.waitSent(t, 3)
+	if !strings.Contains(sent[2], "WARNING CLEARED: web") {
+		t.Errorf("clear = %q", sent[2])
+	}
+}
+
+func TestWarningSeededFromStore(t *testing.T) {
+	st, cfg, fake := testSetup(t)
+	if err := st.InsertResult("web", time.Now().Add(-time.Minute), true, time.Millisecond, "expires in 10d"); err != nil {
+		t.Fatal(err)
+	}
+	e, err := NewEngine(cfg, st, map[string]Notifier{"fake": fake})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Still warning after restart / reload: no duplicate WARNING.
+	e.Process(result(true, "expires in 10d"))
+	if fake.count() != 0 {
+		t.Fatalf("duplicate WARNING after restart: %v", fake.sent)
+	}
+	// Clearing after restart still notifies.
+	e.Process(result(true, ""))
+	sent := fake.waitSent(t, 1)
+	if !strings.Contains(sent[0], "WARNING CLEARED: web") {
+		t.Errorf("alert = %q", sent[0])
+	}
+}
+
 func TestFreeMobile(t *testing.T) {
 	var gotQuery url.Values
 	status := http.StatusOK

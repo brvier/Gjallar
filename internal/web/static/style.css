@@ -5,6 +5,8 @@
   --border: #2a2a30;
   --red: #e5383b;
   --red-dark: #ba181b;
+  --warn: #f0a500;
+  --warn-dark: #5a3d00;
   --text: #f5f3f4;
   --muted: #a0a0a8;
   --ok: #d3d3d8;
@@ -51,6 +53,7 @@ h2 { border-left: 4px solid var(--red); padding-left: 10px; }
 .group-head h2 { margin: 0 0 8px; }
 .group-count { color: var(--muted); font-size: 12px; }
 .group-count.bad { color: var(--red); font-weight: 700; }
+.group-count.warn { color: var(--warn); font-weight: 700; }
 
 /* monitor cards */
 .cards { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
@@ -69,6 +72,7 @@ h2 { border-left: 4px solid var(--red); padding-left: 10px; }
   display: flex; justify-content: space-between;
   color: var(--muted); font-size: 12px; margin-top: 6px;
 }
+.card-msg { color: var(--warn); font-size: 12px; margin-top: 4px; word-break: break-word; }
 
 /* status pills */
 .pill {
@@ -81,6 +85,7 @@ h2 { border-left: 4px solid var(--red); padding-left: 10px; }
 }
 .pill.up { background: #1f2a1f; color: var(--ok); border: 1px solid #3a4a3a; }
 .pill.down { background: var(--red-dark); color: #fff; border: 1px solid var(--red); }
+.pill.warning { background: var(--warn-dark); color: var(--warn); border: 1px solid var(--warn); }
 .pill.pending { background: #26262c; color: var(--muted); border: 1px solid var(--border); }
 .pill.disabled { background: #3a3a42; color: #cfcfd6; border: 1px dashed #6a6a72; }
 .card.disabled { opacity: .75; border-style: dashed; }
@@ -89,6 +94,14 @@ h2 { border-left: 4px solid var(--red); padding-left: 10px; }
   background: #26262c;
   border: 1px dashed #6a6a72;
   color: var(--muted);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 12px 0;
+}
+.banner-warning {
+  background: rgba(240, 165, 0, .12);
+  border: 1px solid var(--warn);
+  color: var(--warn);
   border-radius: 8px;
   padding: 10px 14px;
   margin: 12px 0;
@@ -102,6 +115,7 @@ h2 { border-left: 4px solid var(--red); padding-left: 10px; }
   min-width: 3px;
 }
 .tick.fail { background: var(--red); box-shadow: 0 0 6px rgba(229, 56, 59, .6); }
+.tick.warn { background: var(--warn); }
 .tick.empty { background: #222228; }
 .tick:hover { outline: 1px solid var(--text); }
 

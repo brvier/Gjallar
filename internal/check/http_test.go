@@ -118,18 +118,23 @@ func TestHTTPCheckTLSExpiry(t *testing.T) {
 		return c
 	}
 
-	// httptest certs are valid ~10 years: a 1h window passes, a 100y window fails.
+	// httptest certs are valid ~10 years: a 1h window is clean, a 100y window
+	// warns (still ok, with a message), never fails (issue #2).
 	t.Run("not expiring soon", func(t *testing.T) {
 		c := newTLSCheck(time.Hour)
-		if ok, msg := c.Check(context.Background()); !ok {
-			t.Errorf("expected ok, got %q", msg)
+		if ok, msg := c.Check(context.Background()); !ok || msg != "" {
+			t.Errorf("expected clean ok, got ok=%v msg=%q", ok, msg)
 		}
 	})
-	t.Run("expiring within window", func(t *testing.T) {
+	t.Run("expiring within window warns but stays up", func(t *testing.T) {
 		c := newTLSCheck(100 * 365 * 24 * time.Hour)
 		ok, msg := c.Check(context.Background())
-		if ok || !strings.Contains(msg, "TLS certificate expires") {
+		if !ok || !strings.Contains(msg, "TLS certificate expires") {
 			t.Errorf("got ok=%v msg=%q", ok, msg)
+		}
+		r := Result{OK: ok, Message: msg}
+		if !r.Warning() {
+			t.Error("expected a warning result")
 		}
 	})
 	t.Run("disabled ignores expiry", func(t *testing.T) {

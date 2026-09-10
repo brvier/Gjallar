@@ -21,6 +21,9 @@ type ResultRow struct {
 	Message string
 }
 
+// Warning mirrors check.Result.Warning: an OK result carrying a message.
+func (r ResultRow) Warning() bool { return r.OK && r.Message != "" }
+
 type Incident struct {
 	ID         int64
 	Monitor    string
